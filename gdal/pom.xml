@@ -43,7 +43,7 @@
                             <version>2.0.1-SNAPSHOT</version>
                             <packaging>dll</packaging>
                             <generatePom>true</generatePom>
-                            <url>http://mavenrepo/nexus/content/groups/public/</url>
+                            <url>http://mavenrepo/nexus/content/repositories/snapshots/</url> 
                         </configuration>
                     </execution>
                 </executions>
