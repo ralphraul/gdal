@@ -7,7 +7,6 @@
         <groupId>com.onespatial.tools.mvn.parentpom</groupId>
         <artifactId>parentpom-nocode</artifactId>
         <version>0.10</version>
-
     </parent>
 
     <prerequisites>
@@ -15,7 +14,7 @@
     </prerequisites>
 
     <groupId>com.onespatial</groupId>
-    <artifactId>gdal-deployment</artifactId>
+    <artifactId>osrjni-deployment</artifactId>
     <packaging>pom</packaging>
     <version>1.0.0</version>
 
@@ -32,16 +31,16 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>deploy-gdal-dll</id>
+                        <id>deploy-osrjni-dll</id>
                         <phase>deploy</phase>
                         <goals>
                             <goal>deploy-file</goal>
                         </goals>
                         <configuration>
 			    <repositoryId>releases</repositoryId>
-                            <file>gdal201.dll</file>
+                            <file>osrjni.dll</file>
                             <groupId>com.onespatial.gdal</groupId>
-                            <artifactId>gdal</artifactId>
+                            <artifactId>osrjni</artifactId>
                             <version>2.0.1</version>
                             <packaging>dll</packaging>
                             <generatePom>true</generatePom>
