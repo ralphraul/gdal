@@ -1,0 +1,54 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.onespatial.tools.mvn.parentpom</groupId>
+        <artifactId>parentpom-nocode</artifactId>
+        <version>0.10</version>
+    </parent>
+
+    <prerequisites>
+        <maven>3.2.5</maven>
+    </prerequisites>
+
+    <groupId>com.onespatial</groupId>
+    <artifactId>ogr-deployment</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0.0</version>
+
+    <build> 
+        <plugins>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>deploy-ogr</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy-file</goal>
+                        </goals>
+                        <configuration>
+			    <repositoryId>releases</repositoryId>
+                            <file>ogr.jar</file>
+                            <groupId>gdal</groupId>
+                            <artifactId>ogr</artifactId>
+                            <version>1.0.0</version>
+                            <packaging>jar</packaging>
+                            <generatePom>true</generatePom>
+                            <url>http://mavenrepo/nexus/content/repositories/releases/</url> 
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
