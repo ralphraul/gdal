@@ -39,10 +39,10 @@
                         </goals>
                         <configuration>
 			    <repositoryId>releases</repositoryId>
-                            <file>gdal201.dll</file>
+                            <file>gdal202.dll</file>
                             <groupId>com.onespatial.gdal</groupId>
-                            <artifactId>gdal201_w64</artifactId>
-                            <version>2.0.1</version>
+                            <artifactId>gdal202_w64</artifactId>
+                            <version>2.0.2</version>
                             <packaging>dll</packaging>
                             <generatePom>true</generatePom>
                             <url>http://mavenrepo/nexus/content/repositories/releases/</url> 
