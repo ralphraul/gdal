@@ -241,13 +241,19 @@ static swq_expr_node *OGRFeatureFetcher( swq_expr_node *op, void *pFeatureIn )
             poFeature->GetFieldAsDouble(op->field_index) );
         break;
 
+      case SWQ_TIMESTAMP:
+        poRetNode = new swq_expr_node(
+            poFeature->GetFieldAsString(op->field_index) );
+        poRetNode->MarkAsTimestamp();
+        break;
+        
       default:
         poRetNode = new swq_expr_node(
             poFeature->GetFieldAsString(op->field_index) );
         break;
     }
 
-    poRetNode->is_null = !(poFeature->IsFieldSet(op->field_index));
+    poRetNode->is_null = !(poFeature->IsFieldSetAndNotNull(op->field_index));
 
     return poRetNode;
 }
@@ -572,6 +578,7 @@ GIntBig *OGRFeatureQuery::EvaluateAgainstIndices( swq_expr_node *psExpr,
     {
         int nLength = 0;
         GIntBig *panFIDs = NULL;
+        nFIDCount = 0;
 
         for( int iIN = 1; iIN < psExpr->nSubExprCount; iIN++ )
         {
@@ -607,7 +614,7 @@ GIntBig *OGRFeatureQuery::EvaluateAgainstIndices( swq_expr_node *psExpr,
                 return NULL;
             }
 
-            int nFIDCount32 = 0;
+            int nFIDCount32 = static_cast<int>(nFIDCount);
             panFIDs = poIndex->GetAllMatches( &sValue, panFIDs,
                                               &nFIDCount32, &nLength );
             nFIDCount = nFIDCount32;

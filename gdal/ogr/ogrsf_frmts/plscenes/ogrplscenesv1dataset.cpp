@@ -278,7 +278,6 @@ json_object* OGRPLScenesV1Dataset::RunRequest(const char* pszURL,
     if( STARTS_WITH(m_osBaseURL, "/vsimem/") &&
         STARTS_WITH(pszURL, "/vsimem/") )
     {
-        CPLDebug("PLSCENES", "Fetching %s", pszURL);
         psResult = (CPLHTTPResult*) CPLCalloc(1, sizeof(CPLHTTPResult));
         vsi_l_offset nDataLengthLarge = 0;
         CPLString osURL(pszURL);
@@ -289,6 +288,7 @@ json_object* OGRPLScenesV1Dataset::RunRequest(const char* pszURL,
             osURL += "&POSTFIELDS=";
             osURL += pszPostContent;
         }
+        CPLDebug("PLSCENES", "Fetching %s", osURL.c_str());
         GByte* pabyBuf = VSIGetMemFileBuffer(osURL, &nDataLengthLarge, FALSE);
         size_t nDataLength = static_cast<size_t>(nDataLengthLarge);
         if( pabyBuf )
@@ -639,7 +639,7 @@ retry:
             {
                 for(int i=0;i<poFeat->GetFieldCount();i++)
                 {
-                    if( poFeat->IsFieldSet(i) )
+                    if( poFeat->IsFieldSetAndNotNull(i) )
                     {
                         const char* pszKey = poFeat->GetFieldDefnRef(i)->GetNameRef();
                         const char* pszVal = poFeat->GetFieldAsString(i);

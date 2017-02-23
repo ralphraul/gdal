@@ -114,6 +114,7 @@ public:
     ~swq_expr_node();
 
     void           Initialize();
+    void           MarkAsTimestamp();
     CPLString      UnparseOperationFromUnparsedSubExpr(char** apszSubExpr);
     char          *Unparse( swq_field_list *, char chColumnQuote );
     void           Dump( FILE *fp, int depth );
@@ -358,6 +359,12 @@ public:
     void        PushOrderBy( const char* pszTableName, const char *pszFieldName, int bAscending );
     int         order_specs;
     swq_order_def *order_defs;
+
+    void        SetLimit( GIntBig nLimit );
+    GIntBig     limit;
+
+    void        SetOffset( GIntBig nOffset );
+    GIntBig     offset;
 
     swq_select *poOtherSelect;
     void        PushUnionAll( swq_select* poOtherSelectIn );

@@ -595,11 +595,11 @@ CPLErr CPL_STDCALL GDALReadBlock( GDALRasterBandH hBand, int nXOff, int nYOff,
  * \brief Read a block of data.
  *
  * Default internal implementation ... to be overridden by
- * subclasses that support writing.
+ * subclasses that support reading.
  * @param nBlockXOff Block X Offset
  * @param nBlockYOff Block Y Offset
- * @param pData Pixel buffer to write
- * @return error code.
+ * @param pData Pixel buffer into which to place read data.
+ * @return CE_None on success or CE_Failure on an error.
  */
 
 /************************************************************************/
@@ -615,7 +615,7 @@ CPLErr CPL_STDCALL GDALReadBlock( GDALRasterBandH hBand, int nXOff, int nYOff,
  * @param nBlockXOff Block X Offset
  * @param nBlockYOff Block Y Offset
  * @param pData Pixel buffer to write
- * @return error code.
+ * @return CE_None on success or CE_Failure on an error.
  */
 
 /**/
@@ -2952,6 +2952,16 @@ CPLErr GDALRasterBand::GetHistogram( double dfMin, double dfMax,
     // old behaviour made sense somethimes.
     bGotNoDataValue = bGotNoDataValue &&
         !CPLTestBool(CPLGetConfigOption("GDAL_NODATA_IN_HISTOGRAM", "NO"));
+    bool bGotFloatNoDataValue = false;
+    float fNoDataValue = 0.0f;
+    if( eDataType == GDT_Float32 && bGotNoDataValue &&
+        (fabs(dfNoDataValue) <= std::numeric_limits<float>::max() ||
+         CPLIsInf(dfNoDataValue)) )
+    {
+        fNoDataValue = static_cast<float>(dfNoDataValue);
+        bGotFloatNoDataValue = true;
+        bGotNoDataValue = false;
+    }
 
     const char* pszPixelType = GetMetadataItem("PIXELTYPE", "IMAGE_STRUCTURE");
     const bool bSignedByte =
@@ -3026,10 +3036,14 @@ CPLErr GDALRasterBand::GetHistogram( double dfMin, double dfMax,
                     dfValue = static_cast<GInt32 *>(pData)[iOffset];
                     break;
                   case GDT_Float32:
-                    dfValue = static_cast<float *>(pData)[iOffset];
-                    if( CPLIsNan(dfValue) )
+                  {
+                    const float fValue = static_cast<float *>(pData)[iOffset];
+                    if( CPLIsNan(fValue) ||
+                        (bGotFloatNoDataValue && fValue == fNoDataValue) )
                         continue;
+                    dfValue = fValue;
                     break;
+                  }
                   case GDT_Float64:
                     dfValue = static_cast<double *>(pData)[iOffset];
                     if( CPLIsNan(dfValue) )
@@ -3214,10 +3228,14 @@ CPLErr GDALRasterBand::GetHistogram( double dfMin, double dfMax,
                         dfValue = static_cast<GInt32 *>(pData)[iOffset];
                         break;
                       case GDT_Float32:
-                        dfValue = static_cast<float *>(pData)[iOffset];
-                        if( CPLIsNan(dfValue) )
+                      {
+                        const float fValue = static_cast<float *>(pData)[iOffset];
+                        if( CPLIsNan(fValue) ||
+                            (bGotFloatNoDataValue && fValue == fNoDataValue) )
                             continue;
+                        dfValue = fValue;
                         break;
+                      }
                       case GDT_Float64:
                         dfValue = static_cast<double *>(pData)[iOffset];
                         if( CPLIsNan(dfValue) )
@@ -3486,8 +3504,13 @@ CPLErr
     }
 
     *pnBuckets = nBuckets;
-    return GetHistogram( *pdfMin, *pdfMax, *pnBuckets, *ppanHistogram,
+    CPLErr eErr = GetHistogram( *pdfMin, *pdfMax, *pnBuckets, *ppanHistogram,
                          TRUE, FALSE, pfnProgress, pProgressData );
+    if( eErr != CE_None )
+    {
+        *pnBuckets = 0;
+    }
+    return eErr;
 }
 
 /************************************************************************/
@@ -4733,6 +4756,16 @@ GDALRasterBand::ComputeStatistics( int bApproxOK,
     int bGotNoDataValue = FALSE;
     const double dfNoDataValue = GetNoDataValue( &bGotNoDataValue );
     bGotNoDataValue = bGotNoDataValue && !CPLIsNan(dfNoDataValue);
+    bool bGotFloatNoDataValue = false;
+    float fNoDataValue = 0.0f;
+    if( eDataType == GDT_Float32 && bGotNoDataValue &&
+        (fabs(dfNoDataValue) <= std::numeric_limits<float>::max() ||
+         CPLIsInf(dfNoDataValue)) )
+    {
+        fNoDataValue = static_cast<float>(dfNoDataValue);
+        bGotFloatNoDataValue = true;
+        bGotNoDataValue = false;
+    }
 
     const char* pszPixelType =
         GetMetadataItem("PIXELTYPE", "IMAGE_STRUCTURE");
@@ -4811,10 +4844,14 @@ GDALRasterBand::ComputeStatistics( int bApproxOK,
                     dfValue = static_cast<GInt32 *>(pData)[iOffset];
                     break;
                   case GDT_Float32:
-                    dfValue = static_cast<float *>(pData)[iOffset];
-                    if( CPLIsNan(dfValue) )
+                  {
+                    const float fValue = static_cast<float *>(pData)[iOffset];
+                    if( CPLIsNan(fValue) ||
+                        (bGotFloatNoDataValue && fValue == fNoDataValue) )
                         continue;
+                    dfValue = fValue;
                     break;
+                  }
                   case GDT_Float64:
                     dfValue = static_cast<double *>(pData)[iOffset];
                     if( CPLIsNan(dfValue) )
@@ -5080,10 +5117,14 @@ GDALRasterBand::ComputeStatistics( int bApproxOK,
                         dfValue = static_cast<GInt32 *>(pData)[iOffset];
                         break;
                       case GDT_Float32:
-                        dfValue = static_cast<float *>(pData)[iOffset];
-                        if (CPLIsNan(dfValue))
+                      {
+                        const float fValue = static_cast<float *>(pData)[iOffset];
+                        if( CPLIsNan(fValue) ||
+                            (bGotFloatNoDataValue && fValue == fNoDataValue) )
                             continue;
+                        dfValue = fValue;
                         break;
+                      }
                       case GDT_Float64:
                         dfValue = ((double *)pData)[iOffset];
                         if( CPLIsNan(dfValue) )
@@ -5347,6 +5388,16 @@ CPLErr GDALRasterBand::ComputeRasterMinMax( int bApproxOK,
     int bGotNoDataValue = FALSE;
     const double dfNoDataValue = GetNoDataValue( &bGotNoDataValue );
     bGotNoDataValue = bGotNoDataValue && !CPLIsNan(dfNoDataValue);
+    bool bGotFloatNoDataValue = false;
+    float fNoDataValue = 0.0f;
+    if( eDataType == GDT_Float32 && bGotNoDataValue &&
+        (fabs(dfNoDataValue) <= std::numeric_limits<float>::max() ||
+         CPLIsInf(dfNoDataValue)) )
+    {
+        fNoDataValue = static_cast<float>(dfNoDataValue);
+        bGotFloatNoDataValue = true;
+        bGotNoDataValue = false;
+    }
 
     const char* pszPixelType = GetMetadataItem("PIXELTYPE", "IMAGE_STRUCTURE");
     const bool bSignedByte =
@@ -5424,10 +5475,14 @@ CPLErr GDALRasterBand::ComputeRasterMinMax( int bApproxOK,
                     dfValue = static_cast<GInt32 *>(pData)[iOffset];
                     break;
                   case GDT_Float32:
-                    dfValue = static_cast<float *>(pData)[iOffset];
-                    if( CPLIsNan(dfValue) )
+                  {
+                    const float fValue = static_cast<float *>(pData)[iOffset];
+                    if( CPLIsNan(fValue) ||
+                        (bGotFloatNoDataValue && fValue == fNoDataValue) )
                         continue;
+                    dfValue = fValue;
                     break;
+                  }
                   case GDT_Float64:
                     dfValue = static_cast<double *>(pData)[iOffset];
                     if( CPLIsNan(dfValue) )
@@ -5549,10 +5604,14 @@ CPLErr GDALRasterBand::ComputeRasterMinMax( int bApproxOK,
                         dfValue = static_cast<GInt32 *>(pData)[iOffset];
                         break;
                       case GDT_Float32:
-                        dfValue = static_cast<float *>(pData)[iOffset];
-                        if( CPLIsNan(dfValue) )
-                            continue;
-                        break;
+                      {
+                          const float fValue = static_cast<float *>(pData)[iOffset];
+                          if( CPLIsNan(fValue) ||
+                              (bGotFloatNoDataValue && fValue == fNoDataValue) )
+                              continue;
+                          dfValue = fValue;
+                          break;
+                      }
                       case GDT_Float64:
                         dfValue = static_cast<double *>(pData)[iOffset];
                         if( CPLIsNan(dfValue) )

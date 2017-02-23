@@ -1,7 +1,12 @@
 
-/*! \page gdal_edit gdal_edit.py
+/*!
+\if man
+\page gdal_edit
+\else
+\page gdal_edit gdal_edit.py
+\endif
 
-Edit in place various information of an existing GDAL dataset
+Edit in place various information of an existing GDAL dataset.
 
 \section gdal_edit_synopsis SYNOPSIS
 
@@ -41,7 +46,9 @@ into PAM .aux.xml files.</dd>
 <dt> <b>-a_srs</b> <i>srs_def</i>:</dt><dd>
 
 Defines the target coordinate system.  This coordinate system will be
-written to the dataset.
+written to the dataset. If the empty string or None is specified, then the
+existing coordinate system will be removed (for TIFF/GeoTIFF, might not be
+well supported besides that).
 
 <dt> <b>-a_ullr</b> <i>ulx uly lrx lry</i>:</dt><dd>
 Assign/override the georeferenced bounds of the dataset.</dd>

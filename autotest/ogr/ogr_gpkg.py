@@ -614,7 +614,7 @@ def ogr_gpkg_13():
     if gdaltest.gpkg_dr is None:
         return 'skip'
 
-    lyr = gdaltest.gpkg_ds.CreateLayer('non_spatial', geom_type = ogr.wkbNone )
+    lyr = gdaltest.gpkg_ds.CreateLayer('non_spatial', geom_type = ogr.wkbNone, options = [ 'ASPATIAL_VARIANT=OGR_ASPATIAL' ] )
     feat = ogr.Feature(lyr.GetLayerDefn())
     lyr.CreateFeature(feat)
     feat = None
@@ -625,7 +625,7 @@ def ogr_gpkg_13():
     feat = None
     lyr.ResetReading()
     feat = lyr.GetNextFeature()
-    if feat.IsFieldSet('fld_integer'):
+    if not feat.IsFieldNull('fld_integer'):
         feat.DumpReadable()
         gdaltest.post_reason('fail')
         return 'fail'
@@ -636,7 +636,7 @@ def ogr_gpkg_13():
         return 'fail'
 
     # Test second aspatial layer
-    lyr = gdaltest.gpkg_ds.CreateLayer('non_spatial2', geom_type = ogr.wkbNone )
+    lyr = gdaltest.gpkg_ds.CreateLayer('non_spatial2', geom_type = ogr.wkbNone, options = [ 'ASPATIAL_VARIANT=OGR_ASPATIAL' ] )
 
     gdaltest.gpkg_ds = None
     gdaltest.gpkg_ds = ogr.Open('tmp/gpkg_test.gpkg', update = 1)
@@ -651,7 +651,7 @@ def ogr_gpkg_13():
         gdaltest.post_reason('fail')
         return 'fail'
     feat = lyr.GetNextFeature()
-    if feat.IsFieldSet('fld_integer'):
+    if not feat.IsFieldNull('fld_integer'):
         gdaltest.post_reason('fail')
         return 'fail'
     feat = lyr.GetNextFeature()
@@ -734,8 +734,8 @@ def ogr_gpkg_15():
         'SELECT ST_IsEmpty(geom), ST_SRID(geom), ST_GeometryType(geom), ' + \
         'ST_MinX(geom), ST_MinY(geom), ST_MaxX(geom), ST_MaxY(geom) FROM tbl_linestring_renamed WHERE geom IS NULL')
     feat = sql_lyr.GetNextFeature()
-    if feat.IsFieldSet(0) or feat.IsFieldSet(1) or feat.IsFieldSet(2) or \
-       feat.IsFieldSet(3) or feat.IsFieldSet(4) or feat.IsFieldSet(5) or feat.IsFieldSet(6):
+    if not feat.IsFieldNull(0) or not feat.IsFieldNull(1) or not feat.IsFieldNull(2) or \
+       not feat.IsFieldNull(3) or not feat.IsFieldNull(4) or not feat.IsFieldNull(5) or not feat.IsFieldNull(6):
         feat.DumpReadable()
         gdaltest.post_reason('fail')
         return 'fail'
@@ -1392,7 +1392,7 @@ def ogr_gpkg_23():
     f = None
 
     # Not-nullable fields and geometry fields created after table creation
-    lyr = ds.CreateLayer('test3', geom_type = ogr.wkbNone)
+    lyr = ds.CreateLayer('test3', geom_type = ogr.wkbNone, options = [ 'ASPATIAL_VARIANT=OGR_ASPATIAL' ])
 
     f = ogr.Feature(lyr.GetLayerDefn())
     lyr.CreateFeature(f)
@@ -1614,7 +1614,7 @@ def ogr_gpkg_24():
     f = lyr.GetNextFeature()
     if f.GetField('field_string') != 'a\'b' or f.GetField('field_int') != 123 or \
        f.GetField('field_real') != 1.23 or \
-       f.IsFieldSet('field_nodefault') or not f.IsFieldSet('field_datetime')  or \
+       not f.IsFieldNull('field_nodefault') or not f.IsFieldSet('field_datetime')  or \
        f.GetField('field_datetime2') != '2015/06/30 12:34:56+00' or \
        f.GetField('field_datetime4') != '2015/06/30 12:34:56.123+00' or \
        not f.IsFieldSet('field_datetime3') or \
@@ -2111,7 +2111,7 @@ def ogr_gpkg_32():
         return 'skip'
 
     ds = gdaltest.gpkg_dr.CreateDataSource('/vsimem/ogr_gpkg_32.gpkg')
-    ds.CreateLayer('aspatial', geom_type = ogr.wkbNone, options = ['REGISTER_AS_ASPATIAL=NO'] )
+    ds.CreateLayer('aspatial', geom_type = ogr.wkbNone, options = ['ASPATIAL_VARIANT=NOT_REGISTERED'] )
     ds = None
 
     ds = ogr.Open('/vsimem/ogr_gpkg_32.gpkg')
@@ -2846,6 +2846,80 @@ def ogr_gpkg_39():
     return 'success'
 
 ###############################################################################
+# Run creating a non-spatial layer that is registered as 'attributes' and
+# read it back
+
+def ogr_gpkg_40():
+
+    if gdaltest.gpkg_dr is None:
+        return 'skip'
+
+    ds = gdaltest.gpkg_dr.CreateDataSource('/vsimem/ogr_gpkg_40.gpkg')
+    ds.CreateLayer('aspatial', geom_type = ogr.wkbNone, options = ['ASPATIAL_VARIANT=GPKG_ATTRIBUTES'] )
+    ds = None
+
+    ds = ogr.Open('/vsimem/ogr_gpkg_40.gpkg')
+    if ds.GetLayerCount() != 1:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    sql_lyr = ds.ExecuteSQL('SELECT * FROM gpkg_contents')
+    if sql_lyr.GetFeatureCount() != 1:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    ds.ReleaseResultSet(sql_lyr)
+    sql_lyr = ds.ExecuteSQL('SELECT * FROM gpkg_geometry_columns')
+    if sql_lyr.GetFeatureCount() != 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    ds.ReleaseResultSet(sql_lyr)
+    sql_lyr = ds.ExecuteSQL("SELECT * FROM sqlite_master WHERE name = 'gpkg_extensions'")
+    if sql_lyr.GetFeatureCount() != 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    ds.ReleaseResultSet(sql_lyr)
+    ds = None
+
+    gdaltest.gpkg_dr.DeleteDataSource('/vsimem/ogr_gpkg_40.gpkg')
+
+    return 'success'
+
+###############################################################################
+# Test tables without integer primary key (#6799), and unrecognized column type
+
+def ogr_gpkg_41():
+
+    if gdaltest.gpkg_dr is None:
+        return 'skip'
+
+    ds = gdaltest.gpkg_dr.CreateDataSource('/vsimem/ogr_gpkg_41.gpkg')
+    ds.ExecuteSQL('CREATE TABLE foo (mycol VARCHAR_ILLEGAL)')
+    ds.ExecuteSQL("INSERT INTO foo VALUES ('myval')")
+    ds.ExecuteSQL("INSERT INTO gpkg_contents (table_name,data_type,identifier,description,last_change,srs_id) VALUES ('foo','attributes','foo','','',0)")
+    ds = None
+
+    ds = ogr.Open('/vsimem/ogr_gpkg_41.gpkg')
+    lyr = ds.GetLayer(0)
+    f = lyr.GetNextFeature()
+    if f['mycol'] != 'myval' or f.GetFID() != 1:
+        gdaltest.post_reason('fail')
+        f.DumpReadable()
+        return 'fail'
+    ds = None
+
+    ds = ogr.Open('/vsimem/ogr_gpkg_41.gpkg')
+    lyr = ds.GetLayer(0)
+    f = lyr.GetFeature(1)
+    if f['mycol'] != 'myval' or f.GetFID() != 1:
+        gdaltest.post_reason('fail')
+        f.DumpReadable()
+        return 'fail'
+    ds = None
+
+    gdaltest.gpkg_dr.DeleteDataSource('/vsimem/ogr_gpkg_41.gpkg')
+
+    return 'success'
+
+###############################################################################
 # Remove the test db from the tmp directory
 
 def ogr_gpkg_cleanup():
@@ -2909,6 +2983,8 @@ gdaltest_list = [
     ogr_gpkg_37,
     ogr_gpkg_38,
     ogr_gpkg_39,
+    ogr_gpkg_40,
+    ogr_gpkg_41,
     ogr_gpkg_test_ogrsf,
     ogr_gpkg_cleanup,
 ]

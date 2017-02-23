@@ -126,3 +126,33 @@ int URLSearchAndReplace (CPLString *base, const char *search, const char *fmt, .
     base->replace(start, strlen(search), tmp);
     return static_cast<int>(start);
 }
+
+// decode s from base64, XMLencoded or read from the file name s
+const char *WMSUtilDecode(CPLString &s, const char *encoding) {
+    if (EQUAL(encoding, "base64")) {
+        std::vector<char> buffer(s.begin(), s.end());
+        buffer.push_back('\0');
+        CPLBase64DecodeInPlace(reinterpret_cast<GByte *>(&buffer[0]));
+        s.assign(&buffer[0], strlen(&buffer[0]));
+    }
+    else if (EQUAL(encoding, "XMLencoded")) {
+        int len = static_cast<int>(s.size());
+        char *result = CPLUnescapeString(s.c_str(), &len, CPLES_XML);
+        s.assign(result, static_cast<size_t>(len));
+        CPLFree(result);
+    }
+    else if (EQUAL(encoding, "file")) { // Not an encoding but an external file
+        VSILFILE *f = VSIFOpenL(s.c_str(), "rb");
+        s.clear(); // Return an empty string if file can't be opened or read
+        if (f) {
+            VSIFSeekL(f, 0, SEEK_END);
+            size_t size = static_cast<size_t>(VSIFTellL(f));
+            VSIFSeekL(f, 0, SEEK_SET);
+            std::vector<char> buffer(size);
+            if (VSIFReadL(reinterpret_cast<void *>(&buffer[0]), size, 1, f))
+                s.assign(&buffer[0], buffer.size());
+            VSIFCloseL(f);
+        }
+    }
+    return s.c_str();
+}

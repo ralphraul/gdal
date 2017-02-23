@@ -27,13 +27,34 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#include "cpl_port.h"
 #include "ogr_csv.h"
-#include "cpl_conv.h"
-#include "cpl_string.h"
-#include "cpl_csv.h"
-#include "ogr_p.h"
 
+#include <cerrno>
+#include <climits>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#if HAVE_FCNTL_H
+#  include <fcntl.h>
+#endif
 #include <algorithm>
+#include <string>
+#include <vector>
+
+#include "cpl_conv.h"
+#include "cpl_csv.h"
+#include "cpl_error.h"
+#include "cpl_string.h"
+#include "cpl_vsi.h"
+#include "ogr_api.h"
+#include "ogr_core.h"
+#include "ogr_feature.h"
+#include "ogr_geometry.h"
+#include "ogr_p.h"
+#include "ogr_spatialref.h"
+#include "ogrsf_frmts.h"
 
 CPL_CVSID("$Id$");
 
@@ -1581,7 +1602,7 @@ OGRFeature * OGRCSVLayer::GetNextUnfilteredFeature()
             {
                 poFeature->SetField( iOGRField, papszTokens[iAttr] );
                 if( !bWarningBadTypeOrWidth &&
-                    !poFeature->IsFieldSet(iOGRField) )
+                    !poFeature->IsFieldSetAndNotNull(iOGRField) )
                 {
                     bWarningBadTypeOrWidth = true;
                     CPLError(CE_Warning, CPLE_AppDefined,
@@ -1591,10 +1612,13 @@ OGRFeature * OGRCSVLayer::GetNextUnfilteredFeature()
                 }
             }
         }
-        else
+        else if( !poFieldDefn->IsIgnored() )
         {
-            if( !poFieldDefn->IsIgnored() &&
-                (!bEmptyStringNull || papszTokens[iAttr][0] != '\0') )
+            if( bEmptyStringNull && papszTokens[iAttr][0] == '\0' )
+            {
+                poFeature->SetFieldNull( iOGRField );
+            }
+            else
             {
                 poFeature->SetField( iOGRField, papszTokens[iAttr] );
                 if( !bWarningBadTypeOrWidth && poFieldDefn->GetWidth() > 0 &&
@@ -2293,7 +2317,7 @@ OGRErr OGRCSVLayer::ICreateFeature( OGRFeature *poNewFeature )
             if ( eType == OFTReal)
             {
                 if( poFeatureDefn->GetFieldDefn(iField)->GetSubType() == OFSTFloat32 &&
-                    poNewFeature->IsFieldSet(iField) )
+                    poNewFeature->IsFieldSetAndNotNull(iField) )
                 {
                     pszEscaped = CPLStrdup(CPLSPrintf("%.8g", poNewFeature->GetFieldAsDouble(iField)));
                 }

@@ -36,6 +36,8 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <map>
+#include <utility>
 #include <curl/curl.h>
 
 #include "cpl_conv.h"
@@ -56,6 +58,12 @@ class GDALWMSRasterBand;
 /* -------------------------------------------------------------------- */
 CPLString MD5String(const char *s);
 CPLString ProjToWKT(const CPLString &proj);
+
+// Decode s from encoding "base64" or "XMLencoded".
+// If encoding is "file", s is the file name on input and file content on output
+// If encoding is not recognized, does nothing
+const char *WMSUtilDecode(CPLString &s, const char *encoding);
+
 // Ensure that the url ends in ? or &
 void URLPrepare(CPLString &url);
 // void URLAppend(CPLString *url, const char *s);
@@ -205,6 +213,9 @@ WMSMiniDriver *NewWMSMiniDriver(const CPLString &name);
 void WMSRegisterMiniDriverFactory(WMSMiniDriverFactory *mdf);
 void WMSDeregisterMiniDrivers(GDALDriver *);
 
+// WARNING: Called by GDALDestructor, unsafe to use any static objects
+void WMSDeregister(GDALDriver *);
+
 /************************************************************************/
 /*                            GDALWMSCache                              */
 /************************************************************************/
@@ -336,6 +347,12 @@ public:
         list2vec(vMax,pszMax);
     }
 
+    void SetXML(const char *psz) {
+        m_osXML.clear();
+        if (psz)
+            m_osXML = psz;
+    }
+
     static GDALDataset* Open(GDALOpenInfo *poOpenInfo);
     static int Identify(GDALOpenInfo *poOpenInfo);
     static GDALDataset *CreateCopy( const char * pszFilename,
@@ -345,6 +362,10 @@ public:
                                     void * pProgressData );
 
     const char * const * GetHTTPRequestOpts();
+
+    static const char *GetServerConfig(const char *URI);
+    static void DestroyCfgMutex();
+    static void ClearConfigCache();
 
 protected:
     virtual CPLErr IRasterIO(GDALRWFlag rw, int x0, int y0, int sx, int sy, void *buffer,
@@ -394,6 +415,11 @@ protected:
     bool m_bNeedsDataWindow;
 
     CPLString m_osXML;
+
+    // Per session cache of server configurations
+    typedef std::map<CPLString, CPLString> StringMap_t;
+    static CPLMutex *cfgmtx;
+    static StringMap_t cfg;
 };
 
 /************************************************************************/
