@@ -43,8 +43,8 @@
 # 1300 = 7.0 (2002) # is it still supported ?
 #
 !IFNDEF MSVC_VER
-#assume msvc VS2008.
-MSVC_VER=1500
+#assume msvc VS2013.
+MSVC_VER=1800
 !ENDIF
 
 ###############################################################################
@@ -94,7 +94,7 @@ SWIG = swig.exe
 
 # SWIG Java settings
 !IFNDEF JAVA_HOME
-JAVA_HOME = c:\j2sdk1.4.2_12
+JAVA_HOME = "c:\Program Files\Java\jdk1.7.0_80" 
 !ENDIF
 !IFNDEF ANT_HOME
 ANT_HOME=c:\programmi\apache-ant-1.7.0
@@ -199,7 +199,7 @@ LDEBUG= /debug
 # Uncomment the following if you are building for 64-bit windows
 # (x64). You'll need to have PATH, INCLUDE and LIB set up for 64-bit
 # compiles.
-#WIN64=YES
+WIN64=YES
 # Capture WIN64=1 if specified in NMAKE command line
 !IFDEF WIN64
 WIN64=YES
