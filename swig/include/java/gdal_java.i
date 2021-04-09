@@ -14,20 +14,7 @@
   private static boolean available = false;
 
   static {
-    try {
-      System.loadLibrary("gdalalljni");
-      available = true;
-
-      if (gdal.HasThreadSupport() == 0)
-      {
-        System.err.println("WARNING : GDAL should be compiled with thread support for safe execution in Java.");
-      }
-
-    } catch (UnsatisfiedLinkError e) {
-      available = false;
-      System.err.println("Native library load failed.");
-      System.err.println(e);
-    }
+    available = true;
   }
 
   public static boolean isAvailable() {
