@@ -1,72 +1,31 @@
-GDAL - Geospatial Data Abstraction Library
-====
+# GDAL Mirror Branch
 
-[![Build Status](https://github.com/OSGeo/gdal/workflows/Linux%20Builds/badge.svg)](https://github.com/osgeo/gdal/actions?query=workflow%3A%22Linux+Builds%22+branch%3Amaster)
-[![Build Status](https://github.com/OSGeo/gdal/workflows/MacOS%20build/badge.svg)](https://github.com/osgeo/gdal/actions?query=workflow%3A%22MacOS+build%22+branch%3Amaster)
-[![Build Status](https://github.com/OSGeo/gdal/workflows/Windows%20builds/badge.svg)](https://github.com/osgeo/gdal/actions?query=workflow%3A%22Windows+builds%22+branch%3Amaster)
-[![Build Status](https://github.com/OSGeo/gdal/workflows/Android%20build/badge.svg)](https://github.com/osgeo/gdal/actions?query=workflow%3A%22Android+build%22+branch%3Amaster)
-[![Build Status](https://github.com/OSGeo/gdal/workflows/CLang%20Static%20Analyzer/badge.svg)](https://github.com/osgeo/gdal/actions?query=workflow%3A%22CLang+Static+Analyzer%22+branch%3Amaster)
-[![Build Status](https://github.com/OSGeo/gdal/workflows/Code%20Checks/badge.svg)](https://github.com/osgeo/gdal/actions?query=workflow%3A%22Code+Checks%22+branch%3Amaster)
-[![Build Status](https://travis-ci.com/OSGeo/gdal.svg?branch=master)](https://travis-ci.com/OSGeo/gdal)
-[![Build Status](https://scan.coverity.com/projects/749/badge.svg?flat=1)](https://scan.coverity.com/projects/gdal)
-[![Documentation build Status](https://github.com/OSGeo/gdal/workflows/Docs/badge.svg)](https://github.com/osgeo/gdal/actions?query=workflow%3A%22Docs%22+branch%3Amaster)
-[![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/gdal.svg)](https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:gdal)
+This repository exists to allow us to build a custom branch of gdal with changes required for 1int to work optimally.
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5884351.svg)](https://doi.org/10.5281/zenodo.5884351)
+## Branches
 
-[![Powered by NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A )](http://numfocus.org)
+This repo contains 2 branches, master and source.
 
+- master: This branch is the one used to build the gdal artifacts by [mvn_gdal_build_w64](https://bitbucket.org/1spatial/mvn_gdal_build_w64/src/master/) and [mvn_gdal_build_lx86_64](https://bitbucket.org/1spatial/mvn_gdal_build_lx86_64/src/master/). It should be equal to a certain tag of the gdal public repo, with our changes applied on top.
 
-GDAL is an open source MIT licensed translator library for raster and vector geospatial data formats.
+- source: This should be an exact mirror of the gdal public repo at a certain tag. This should be equal to master without the custom changed we have made.
 
-* Main site: https://gdal.org - Developer and user docs, links to other resources
-* GIT repository: https://github.com/OSGeo/gdal
-* Bug tracker: https://github.com/OSGeo/gdal/issues
-* Download: https://download.osgeo.org/gdal
-* Wiki: https://trac.osgeo.org/gdal - Various user and developer contributed documentation and hints
-* Mailing list: https://lists.osgeo.org/mailman/listinfo/gdal-dev
+## How to update
 
-[//]: # (numfocus-fiscal-sponsor-attribution)
+To update the master to a new tag of the gdal branch:
 
-The GDAL project uses a [custom governance](./GOVERNANCE.md)
-and is fiscally sponsored by [NumFOCUS](https://numfocus.org/). Consider making
-a [tax-deductible donation](https://numfocus.org/donate-to-gdal) to help the project
-pay for developer time, professional services, travel, workshops, and a variety of other needs.
+- If you haven't already, add the gdal github repo as a new remote `git remote add github https://github.com/OSGeo/gdal.git`
 
-<div align="center">
-  <a href="https://numfocus.org/project/gdal">
-    <img height="60px"
-         src="https://raw.githubusercontent.com/numfocus/templates/master/images/numfocus-logo.png"
-         align="center">
-  </a>
-</div>
-<br>
+- Switch to the source branch `git checkout source`
 
-NumFOCUS is 501(c)(3) non-profit charity in the United States; as such, donations to
-NumFOCUS are tax-deductible as allowed by law. As with any donation, you should
-consult with your personal tax adviser or the IRS about your particular tax situation.
+- Fetch the commits from github `git fetch github`
 
-### How to build
+- Reset the branch to the desired tag `git reset --hard tags/v3.2.2`
 
-See [BUILDING.md](BUILDING.md)
+- Verify that the latest commit is a 'Prepare for GDAL' commit.
 
-### How to contribute
+- Switch back to master
 
-See [CONTRIBUTING.md](CONTRIBUTING.md)
+- Rebase this branch on top of the source branch (avoid merging, as we don't want master to get cluttered with merge commits)
 
-### Docker images
-
-See [docker/](docker/)
-
-### Code of Conduct
-
-See [doc/source/community/code_of_conduct.rst](doc/source/community/code_of_conduct.rst)
-
-### Security policy
-
-See [SECURITY.md](SECURITY.md)
-
-### Citing GDAL/OGR in publications
-
-See [CITATION](CITATION) and [CITATION.cff](CITATION.cff)
-
+- Push both branches
