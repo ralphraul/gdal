@@ -1944,3 +1944,104 @@ DEFINE_REGULAR_ARRAY_IN(double, jdouble, GetDoubleArrayElements, ReleaseDoubleAr
 %typemap(javaout) ( retGetPoints* ) {
     return $jnicall;
   }
+
+/***************************************************
+ * Typemaps for FieldDomain.GetEnumeration()
+ ***************************************************/
+
+%typemap(in) const OGRCodedValue*
+{
+  /* %typemap(in) char **dict */
+  /* Convert the Hashtable to a char array */
+  $1 = NULL;
+  if($input != 0) {
+    const jclass hashtable = jenv->FindClass("java/util/Hashtable");
+    const jclass enumeration = jenv->FindClass("java/util/Enumeration");
+    const jclass stringClass = jenv->FindClass("java/lang/String");
+    const jmethodID get = jenv->GetMethodID(hashtable, "get",
+      "(Ljava/lang/Object;)Ljava/lang/Object;");
+    const jmethodID size = jenv->GetMethodID(hashtable, "size", "()I");
+    const jmethodID keys = jenv->GetMethodID(hashtable, "keys",
+      "()Ljava/util/Enumeration;");
+    const jmethodID hasMoreElements = jenv->GetMethodID(enumeration,
+      "hasMoreElements", "()Z");
+    const jmethodID nextElement = jenv->GetMethodID(enumeration,
+      "nextElement", "()Ljava/lang/Object;");
+    size_t tableSize = jenv->CallObjectMethod($input, size);
+    size_t currentIndex = 0;
+  
+    $1 = (OGRCodedValue*)CPLCalloc(tableSize, sizeof(OGRCodedValue) );
+
+    for (jobject keyset = jenv->CallObjectMethod($input, keys);
+          jenv->CallBooleanMethod(keyset, hasMoreElements) == JNI_TRUE;) {
+      jstring key = (jstring)jenv->CallObjectMethod(keyset, nextElement);
+      if (key == NULL || !jenv->IsInstanceOf(key, stringClass))
+      {
+          CSLDestroy($1);
+          SWIG_JavaThrowException(jenv, SWIG_JavaIllegalArgumentException, "a key in the hashtable is not a string");
+          return $null;
+      }
+      jstring value = (jstring)jenv->CallObjectMethod($input, get, key);
+      if (value != NULL && !jenv->IsInstanceOf(value, stringClass))
+      {
+          CSLDestroy($1);
+          SWIG_JavaThrowException(jenv, SWIG_JavaIllegalArgumentException, "a value in the hashtable is not a string");
+          return $null;
+      }
+      const char *keyptr = jenv->GetStringUTFChars(key, 0);
+      const char *valptr = jenv->GetStringUTFChars(value, 0);
+      ($1)[currentIndex].pszCode = keyptr;
+      ($1)[currentIndex].pszValue = valptr;
+      currentIndex++;
+      jenv->ReleaseStringUTFChars(key, keyptr);
+      jenv->ReleaseStringUTFChars(value, valptr);
+    }
+  }
+}
+
+%typemap(freearg) const OGRCodedValue*
+{
+  /* %typemap(freearg) OGRCodedValue* */
+  if( $1 )
+  {
+      for( size_t i = 0; ($1)[i].pszCode != NULL; ++i )
+      {
+          CPLFree(($1)[i].pszCode);
+          CPLFree(($1)[i].pszValue);
+      }
+  }
+  CPLFree( $1 );
+}
+
+%typemap(out) const OGRCodedValue*
+{
+  /* %typemap(out) OGRCodedValue* */
+  if( $1 == NULL )
+  {
+    return $null;
+  }
+  
+  const jclass hashtable = jenv->FindClass("java/util/Hashtable");
+  const jmethodID constructor = jenv->GetMethodID(hashtable, "<init>", "()V");
+  const jmethodID put = jenv->GetMethodID(hashtable, "put",
+    "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+  $result = jenv->NewObject(hashtable, constructor);
+  if ( $1 != NULL) {
+    for( int i = 0; ($1)[i].pszCode != NULL; i++ )
+    {
+      jstring code = jenv->NewStringUTF(($1)[i].pszCode);
+      jstring value = jenv->NewStringUTF(($1)[i].pszValue);
+      jenv->CallObjectMethod($result, put, code, value);
+      jenv->DeleteLocalRef(code);
+      jenv->DeleteLocalRef(value);
+    }
+  }
+}
+
+%typemap(jni) (const OGRCodedValue*) "jobject"
+%typemap(jtype) (const OGRCodedValue*) "java.util.Hashtable"
+%typemap(jstype) (const OGRCodedValue*) "java.util.Hashtable"
+%typemap(javain) (const OGRCodedValue*) "$javainput"
+%typemap(javaout) (const OGRCodedValue*) {
+    return $jnicall;
+  }

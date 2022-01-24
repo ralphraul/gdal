@@ -3706,11 +3706,9 @@ public:
     OGR_FldDomain_SetMergePolicy(self, policy);
   }
 
-#ifdef SWIGPYTHON
   const OGRCodedValue* GetEnumeration() {
     return OGR_CodedFldDomain_GetEnumeration(self);
   }
-#endif
 
   double GetMinAsDouble() {
       const OGRField* psVal = OGR_RangeFldDomain_GetMin(self, NULL);
