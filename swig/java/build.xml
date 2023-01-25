@@ -50,9 +50,6 @@
         <target name="maven" depends="compile_tests" description="Build maven artifacts">
 		<mkdir dir="${mvn.dir}"/>
 
-		<!-- run the javadoc generation (skipped by CMake builds since they do in build_java_doc.cmake) -->
-		<exec unless:set="skip_make_doc" executable="./make_doc.sh" dir="${build_dir}"/>
-
 		<!-- copy over pom -->
 		<copy file="pom.xml" filtering="true"
 		      tofile="${mvn.dir}/${mvn.base}.pom">
